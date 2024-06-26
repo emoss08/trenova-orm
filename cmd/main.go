@@ -51,6 +51,17 @@ func (User) TableName() string {
 // Fields of the User.
 func (User) Fields() []trenovaorm.Field {
 	return []trenovaorm.Field{
+		&trenovaorm.UUIDField{
+			ColumnName: "id",
+			Nullable:   false,
+			Blank:      false,
+			Unique:     true,
+			Default:    trenovaorm.UUIDGenerateV4,
+			PrimaryKey: true,
+			Comment:    "Unique identifier of the user",
+			CustomType: "uuid",
+			StructTag:  `json:"id" validate:"required"`,
+		},
 		&trenovaorm.CharField{
 			ColumnName: "username",
 			MaxLength:  255,

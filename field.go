@@ -414,9 +414,11 @@ func (f *TextField) Definition() string {
 	if f.Default != "" {
 		def += fmt.Sprintf(" DEFAULT '%s'", f.Default)
 	}
+
 	if len(f.Constraints) > 0 {
 		def += " " + strings.Join(f.Constraints, " ")
 	}
+
 	return def
 }
 
@@ -444,4 +446,67 @@ func (f *TextField) GoType() string {
 		return "*string"
 	}
 	return "string"
+}
+
+// UUIDField represents a UUID field in the database.
+type UUIDField struct {
+	ColumnName  string
+	Nullable    bool
+	Blank       bool
+	Unique      bool
+	Default     PSQLFunction
+	Index       bool
+	Comment     string
+	CustomType  string
+	Constraints []string
+	PrimaryKey  bool
+	StructTag   string
+}
+
+func (f *UUIDField) Definition() string {
+	def := fmt.Sprintf(`"%s" UUID`, f.ColumnName)
+
+	if !f.Nullable {
+		def += fmt.Sprintf(" %s", ConstraintNotNull.String())
+	}
+
+	if f.Unique {
+		def += fmt.Sprintf(" %s", ConstraintUnqiue.String())
+	}
+
+	if f.Default != "" {
+		def += fmt.Sprintf(" DEFAULT %s", f.Default.String())
+	}
+
+	if f.PrimaryKey {
+		def += fmt.Sprintf(" %s", ConstraintPrimaryKey.String())
+	}
+
+	if len(f.Constraints) > 0 {
+		def += " " + strings.Join(f.Constraints, " ")
+	}
+
+	return def
+}
+
+func (f *UUIDField) Name() string {
+	return f.ColumnName
+}
+
+func (f *UUIDField) CommentSQL(tableName string) string {
+	if f.Comment == "" {
+		return ""
+	}
+	return fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s" IS '%s';`, tableName, f.ColumnName, f.Comment)
+}
+
+func (f *UUIDField) Validate() error {
+	return nil
+}
+
+func (f *UUIDField) GoType() string {
+	if f.Nullable {
+		return "*uuid.UUID"
+	}
+	return "uuid.UUID"
 }
