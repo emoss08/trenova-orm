@@ -1,4 +1,4 @@
-package orm
+package trenovaorm
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-// Index defines the structure for database indices, supporting both simple and complex cases
+// Index defines the structure for database indices, supporting both simple and complex cases.
 type Index struct {
 	Name        string       // Index name
 	Columns     []string     // Simple column names
@@ -14,7 +14,7 @@ type Index struct {
 	Unique      bool         // Whether the index is unique
 }
 
-// generateName generates an index name based on the table and column names
+// generateName generates an index name based on the table and column names.
 func (idx *Index) generateName(tableName string) string {
 	if idx.Name != "" {
 		return idx.Name
@@ -31,7 +31,7 @@ func (idx *Index) generateName(tableName string) string {
 	return fmt.Sprintf("%s_%s_idx", tableName, strings.Join(colNames, "_"))
 }
 
-// Validate checks the integrity of the Index struct
+// Validate checks the integrity of the Index struct.
 func (idx *Index) Validate() error {
 	if len(idx.Columns) == 0 && len(idx.Expressions) == 0 {
 		return errors.New("at least one column or expression must be specified")
@@ -39,7 +39,7 @@ func (idx *Index) Validate() error {
 	return nil
 }
 
-// SQL generates the SQL statement for creating the index on a given table
+// SQL generates the SQL statement for creating the index on a given table.
 func (idx *Index) SQL(tableName string) (string, error) {
 	if err := idx.Validate(); err != nil {
 		return "", err

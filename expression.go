@@ -1,4 +1,4 @@
-package orm
+package trenovaorm
 
 import (
 	"fmt"
@@ -74,4 +74,44 @@ func (g Gin) Expression() string {
 
 func (g Gin) ColumnName() string {
 	return g.Column
+}
+
+// Btree defines a BTREE index in PostgreSQL.
+type Btree struct {
+	Column string
+}
+
+func (b Btree) Expression() string {
+	return fmt.Sprintf("USING BTREE (%s)", quoteIdentifier(b.Column))
+}
+
+func (b Btree) ColumnName() string {
+	return b.Column
+}
+
+// Hash defines a HASH index in PostgreSQL.
+type Hash struct {
+	Column string
+}
+
+func (h Hash) Expression() string {
+	return fmt.Sprintf("USING HASH (%s)", quoteIdentifier(h.Column))
+}
+
+func (h Hash) ColumnName() string {
+	return h.Column
+}
+
+// ToTsVector defines a Tsvector expression for full-text search in PostgreSQL.
+type ToTsVector struct {
+	Config string
+	Column string
+}
+
+func (t ToTsVector) Expression() string {
+	return fmt.Sprintf("to_tsvector(%s, %s)", quoteIdentifier(t.Config), quoteIdentifier(t.Column))
+}
+
+func (t ToTsVector) ColumnName() string {
+	return t.Column
 }
