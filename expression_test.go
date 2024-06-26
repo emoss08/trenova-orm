@@ -115,7 +115,7 @@ func TestHash_ColumnName(t *testing.T) {
 }
 
 func TestToTsVector_Expression(t *testing.T) {
-	expr := ToTsVector{Config: "english", Column: "col1"}
+	expr := ToTSVector{Config: "english", Column: "col1"}
 	expected := `to_tsvector("english", "col1")`
 	if expr.Expression() != expected {
 		t.Errorf("ToTsVector.Expression() = %v, want %v", expr.Expression(), expected)
@@ -123,7 +123,7 @@ func TestToTsVector_Expression(t *testing.T) {
 }
 
 func TestToTsVector_ColumnName(t *testing.T) {
-	expr := ToTsVector{Config: "english", Column: "col1"}
+	expr := ToTSVector{Config: "english", Column: "col1"}
 	expected := "col1"
 	if expr.ColumnName() != expected {
 		t.Errorf("ToTsVector.ColumnName() = %v, want %v", expr.ColumnName(), expected)

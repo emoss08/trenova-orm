@@ -103,15 +103,15 @@ func (h Hash) ColumnName() string {
 }
 
 // ToTsVector defines a Tsvector expression for full-text search in PostgreSQL.
-type ToTsVector struct {
+type ToTSVector struct {
 	Config string
 	Column string
 }
 
-func (t ToTsVector) Expression() string {
+func (t ToTSVector) Expression() string {
 	return fmt.Sprintf("to_tsvector(%s, %s)", quoteIdentifier(t.Config), quoteIdentifier(t.Column))
 }
 
-func (t ToTsVector) ColumnName() string {
+func (t ToTSVector) ColumnName() string {
 	return t.Column
 }

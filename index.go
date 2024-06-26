@@ -21,9 +21,9 @@ func (idx *Index) generateName(tableName string) string {
 	}
 
 	var colNames []string
-	for _, col := range idx.Columns {
-		colNames = append(colNames, col)
-	}
+
+	colNames = append(colNames, idx.Columns...)
+
 	for _, exp := range idx.Expressions {
 		colNames = append(colNames, exp.ColumnName())
 	}
