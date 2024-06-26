@@ -7,9 +7,9 @@ import (
 	trenovaorm "github.com/emoss08/trenova-orm"
 )
 
-// TimestampedSchema provides common fields for tracking creation and update times.
-type TimestampedSchema struct {
-	trenovaorm.Schema
+// TimestampedModel provides common fields for tracking creation and update times.
+type TimestampedModel struct {
+	trenovaorm.Model
 }
 
 // Mixins of the User.
@@ -20,7 +20,7 @@ func (User) Mixins() []trenovaorm.Mixin {
 }
 
 // Fields returns the common timestamp fields.
-func (t TimestampedSchema) Fields() []trenovaorm.Field {
+func (t TimestampedModel) Fields() []trenovaorm.Field {
 	return []trenovaorm.Field{
 		&trenovaorm.DateField{
 			ColumnName: "created_at",
@@ -41,7 +41,7 @@ func (t TimestampedSchema) Fields() []trenovaorm.Field {
 
 // User holds the schema definition for the User entity.
 type User struct {
-	TimestampedSchema
+	TimestampedModel
 }
 
 func (User) TableName() string {
@@ -128,28 +128,28 @@ func main() {
 }
 
 // Helper function to generate create table SQL
-func generateCreateTableSQL(schema trenovaorm.Schema) string {
+func generateCreateTableSQL(model trenovaorm.Model) string {
 	var definitions []string
-	for _, field := range schema.Fields() {
+	for _, field := range model.Fields() {
 		definitions = append(definitions, field.Definition())
 	}
 
 	// Include the mixin fields
-	for _, mixin := range schema.Mixins() {
+	for _, mixin := range model.Mixins() {
 		for _, field := range mixin.Fields() {
 			definitions = append(definitions, field.Definition())
 		}
 	}
 
-	tableName := schema.TableName()
+	tableName := model.TableName()
 	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s);`, tableName, strings.Join(definitions, ", "))
 }
 
 // Helper function to generate add comments SQL
-func generateAddCommentsSQL(schema trenovaorm.Schema) []string {
+func generateAddCommentsSQL(model trenovaorm.Model) []string {
 	var comments []string
-	tableName := schema.TableName()
-	for _, field := range schema.Fields() {
+	tableName := model.TableName()
+	for _, field := range model.Fields() {
 		commentSQL := field.CommentSQL(tableName)
 		if commentSQL != "" {
 			comments = append(comments, commentSQL)
@@ -157,7 +157,7 @@ func generateAddCommentsSQL(schema trenovaorm.Schema) []string {
 	}
 
 	// Include the mixin fields
-	for _, mixin := range schema.Mixins() {
+	for _, mixin := range model.Mixins() {
 		for _, field := range mixin.Fields() {
 			commentSQL := field.CommentSQL(tableName)
 			if commentSQL != "" {
@@ -170,10 +170,10 @@ func generateAddCommentsSQL(schema trenovaorm.Schema) []string {
 }
 
 // Helper function to generate create indexes SQL
-func generateCreateIndexesSQL(schema trenovaorm.Schema) []string {
+func generateCreateIndexesSQL(model trenovaorm.Model) []string {
 	var indexes []string
-	tableName := schema.TableName()
-	for _, index := range schema.Indexes() {
+	tableName := model.TableName()
+	for _, index := range model.Indexes() {
 		indexSQL, _ := index.SQL(tableName)
 		indexes = append(indexes, indexSQL)
 	}
@@ -181,22 +181,22 @@ func generateCreateIndexesSQL(schema trenovaorm.Schema) []string {
 }
 
 // Helper function to generate Go struct definition
-func generateGoStruct(schema trenovaorm.Schema) string {
+func generateGoStruct(model trenovaorm.Model) string {
 	var fields []string
-	for _, field := range schema.Fields() {
+	for _, field := range model.Fields() {
 		fieldDef := fmt.Sprintf("%s %s `json:\"%s\"`", toCamelCase(field.Name()), field.GoType(), field.Name())
 		fields = append(fields, fieldDef)
 	}
 
 	// Add the mixin fields
-	for _, mixin := range schema.Mixins() {
+	for _, mixin := range model.Mixins() {
 		for _, field := range mixin.Fields() {
 			fieldDef := fmt.Sprintf("%s %s `json:\"%s\"`", toCamelCase(field.Name()), field.GoType(), field.Name())
 			fields = append(fields, fieldDef)
 		}
 	}
 
-	return fmt.Sprintf("type %s struct {\n\t%s\n}", toCamelCase(schema.TableName()), strings.Join(fields, "\n\t"))
+	return fmt.Sprintf("type %s struct {\n\t%s\n}", toCamelCase(model.TableName()), strings.Join(fields, "\n\t"))
 }
 
 // toCamelCase converts snake_case to CamelCase
