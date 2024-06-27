@@ -109,6 +109,17 @@ func (User) Fields() []trenovaorm.Field {
 			Comment:    "Age of the user",
 			StructTag:  `json:"age" validate:"omitempty"`,
 		},
+		&trenovaorm.NumericField{
+			ColumnName: "rating",
+			Precision:  19,
+			Scale:      2,
+			Nullable:   true,
+			Unique:     false,
+			Default:    19.00,
+			Index:      false,
+			Comment:    "Rating of the user",
+			StructTag:  `json:"rating" validate:"omitempty"`,
+		},
 	}
 }
 

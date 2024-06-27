@@ -101,6 +101,10 @@ func (f *CharField) CommentSQL(tableName string) string {
 
 // Validate checks if the field's configuration is valid.
 func (f *CharField) Validate() error {
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
+	}
+
 	if f.Nullable && f.Default != "" {
 		return fmt.Errorf("CharField %s is nullable and has a default value", f.ColumnName)
 	}
@@ -185,6 +189,10 @@ func (f *IntegerField) CommentSQL(tableName string) string {
 
 // Validate checks if the field's configuration is valid.
 func (f *IntegerField) Validate() error {
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
+	}
+
 	return nil
 }
 
@@ -257,6 +265,10 @@ func (f *BooleanField) CommentSQL(tableName string) string {
 
 // Validate checks if the field's configuration is valid.
 func (f *BooleanField) Validate() error {
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
+	}
+
 	return nil
 }
 
@@ -331,6 +343,10 @@ func (f *DateField) CommentSQL(tableName string) string {
 
 // Validate checks if the field's configuration is valid.
 func (f *DateField) Validate() error {
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
+	}
+
 	return nil
 }
 
@@ -358,7 +374,7 @@ type NumericField struct {
 	Scale       int
 	Nullable    bool
 	Unique      bool
-	Default     string
+	Default     float64
 	Index       bool
 	Comment     string
 	CustomType  string
@@ -379,12 +395,15 @@ func (f *NumericField) Definition() string {
 	if f.Unique {
 		def += " UNIQUE"
 	}
-	if f.Default != "" {
-		def += fmt.Sprintf(" DEFAULT %s", f.Default)
+
+	if f.Default != 0 {
+		def += fmt.Sprintf(" DEFAULT %.*f", f.Scale, f.Default)
 	}
+
 	if len(f.Constraints) > 0 {
 		def += " " + strings.Join(f.Constraints, " ")
 	}
+
 	return def
 }
 
@@ -403,10 +422,21 @@ func (f *NumericField) CommentSQL(tableName string) string {
 
 // Validate checks if the field's configuration is valid.
 func (f *NumericField) Validate() error {
-	// Example validation: Ensure precision and scale are positive and precision is greater than or equal to scale.
-	if f.Precision <= 0 || f.Scale < 0 || f.Precision < f.Scale {
-		return fmt.Errorf("Invalid precision or scale for NumericField: precision %d, scale %d", f.Precision, f.Scale)
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
 	}
+
+	// Ensure precision and scale are positive and precision is greater than or equal to scale.
+	if f.Precision <= 0 || f.Scale < 0 || f.Precision < f.Scale {
+		return fmt.Errorf("invalid precision or scale for NumericField: precision %d, scale %d", f.Precision, f.Scale)
+	}
+
+	// Check the precision and scale of the default value
+	defaultStr := fmt.Sprintf("%.*f", f.Scale, f.Default)
+	if len(defaultStr)-1 > f.Precision+1 {
+		return fmt.Errorf("default value %f exceeds defined precision %d and scale %d", f.Default, f.Precision, f.Scale)
+	}
+
 	return nil
 }
 
@@ -483,6 +513,10 @@ func (f *TextField) CommentSQL(tableName string) string {
 
 // Validate checks if the field's configuration is valid.
 func (f *TextField) Validate() error {
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
+	}
+
 	return nil
 }
 
@@ -728,9 +762,11 @@ func (f *PositiveIntegerField) Validate() error {
 	if f.ColumnName == "" {
 		return fmt.Errorf("column name cannot be empty")
 	}
+
 	if f.Default < 0 {
 		return fmt.Errorf("default value for positive integer field must be positive")
 	}
+
 	return nil
 }
 
