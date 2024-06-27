@@ -185,7 +185,6 @@ func main() {
 }
 
 // Helper function to generate create table SQL
-// Helper function to generate create table SQL
 func generateCreateTableSQL(model trenovaorm.Model) string {
 	var definitions []string
 	var foreignKeys []string
