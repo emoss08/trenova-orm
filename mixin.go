@@ -24,14 +24,14 @@ func (t TimestampedMixin) Fields() []Field {
 		&DateField{
 			ColumnName: "created_at",
 			Nullable:   false,
-			Default:    "CURRENT_TIMESTAMP",
+			Default:    CurrentTimestamp,
 			Comment:    "Creation timestamp",
 			StructTag:  `json:"created_at" validate:"required"`,
 		},
 		&DateField{
 			ColumnName: "updated_at",
 			Nullable:   false,
-			Default:    "CURRENT_TIMESTAMP",
+			Default:    CurrentTimestamp,
 			Comment:    "Update timestamp",
 			StructTag:  `json:"updated_at" validate:"required"`,
 		},
