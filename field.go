@@ -120,6 +120,15 @@ func (f *CharField) GoType() string {
 	return "string"
 }
 
+// IndexSQL generates the SQL statement for creating an index if Index is true.
+func (f *CharField) IndexSQL(tableName string) string {
+	if !f.Index {
+		return ""
+	}
+	indexName := fmt.Sprintf("%s_%s_idx", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE INDEX "%s" ON "%s" ("%s");`, indexName, tableName, f.ColumnName)
+}
+
 // IntegerField represents an integer field in the database.
 type IntegerField struct {
 	ColumnName  string
@@ -187,6 +196,15 @@ func (f *IntegerField) GoType() string {
 	return "int"
 }
 
+// IndexSQL generates the SQL statement for creating an index if Index is true.
+func (f *IntegerField) IndexSQL(tableName string) string {
+	if !f.Index {
+		return ""
+	}
+	indexName := fmt.Sprintf("idx_%s_%s", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE INDEX "%s" ON "%s" ("%s");`, indexName, tableName, f.ColumnName)
+}
+
 // BooleanField represents a boolean field in the database.
 type BooleanField struct {
 	ColumnName  string
@@ -250,6 +268,15 @@ func (f *BooleanField) GoType() string {
 	return "bool"
 }
 
+// IndexSQL generates the SQL statement for creating an index if Index is true.
+func (f *BooleanField) IndexSQL(tableName string) string {
+	if !f.Index {
+		return ""
+	}
+	indexName := fmt.Sprintf("idx_%s_%s", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE INDEX "%s" ON "%s" ("%s");`, indexName, tableName, f.ColumnName)
+}
+
 // DateField represents a date field in the database.
 type DateField struct {
 	ColumnName  string
@@ -280,8 +307,9 @@ func (f *DateField) Definition() string {
 	}
 
 	if f.Default != "" {
-		def += fmt.Sprintf(" DEFAULT '%s'", f.Default.String())
+		def += fmt.Sprintf(" DEFAULT %s", f.Default.String())
 	}
+
 	if len(f.Constraints) > 0 {
 		def += " " + strings.Join(f.Constraints, " ")
 	}
@@ -312,6 +340,15 @@ func (f *DateField) GoType() string {
 		return "*time.Time"
 	}
 	return "time.Time"
+}
+
+// IndexSQL generates the SQL statement for creating an index if Index is true.
+func (f *DateField) IndexSQL(tableName string) string {
+	if !f.Index {
+		return ""
+	}
+	indexName := fmt.Sprintf("idx_%s_%s", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE INDEX "%s" ON "%s" ("%s");`, indexName, tableName, f.ColumnName)
 }
 
 // NumericField represents a numeric field in the database.
@@ -381,6 +418,15 @@ func (f *NumericField) GoType() string {
 	return "float64"
 }
 
+// IndexSQL generates the SQL statement for creating an index if Index is true.
+func (f *NumericField) IndexSQL(tableName string) string {
+	if !f.Index {
+		return ""
+	}
+	indexName := fmt.Sprintf("idx_%s_%s", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE INDEX "%s" ON "%s" ("%s");`, indexName, tableName, f.ColumnName)
+}
+
 // TextField represents a text field in the database.
 type TextField struct {
 	ColumnName  string
@@ -448,6 +494,15 @@ func (f *TextField) GoType() string {
 	return "string"
 }
 
+// IndexSQL generates the SQL statement for creating an index if Index is true.
+func (f *TextField) IndexSQL(tableName string) string {
+	if !f.Index {
+		return ""
+	}
+	indexName := fmt.Sprintf("idx_%s_%s", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE INDEX "%s" ON "%s" ("%s");`, indexName, tableName, f.ColumnName)
+}
+
 // UUIDField represents a UUID field in the database.
 type UUIDField struct {
 	ColumnName  string
@@ -464,10 +519,18 @@ type UUIDField struct {
 }
 
 func (f *UUIDField) Definition() string {
-	def := fmt.Sprintf(`"%s" UUID`, f.ColumnName)
+	typ := "uuid"
+	if f.CustomType != "" {
+		typ = f.CustomType
+	}
+	def := fmt.Sprintf(`"%s" %s`, f.ColumnName, typ)
 
 	if !f.Nullable {
 		def += fmt.Sprintf(" %s", ConstraintNotNull.String())
+	}
+
+	if f.PrimaryKey {
+		def += fmt.Sprintf(" %s", ConstraintPrimaryKey.String())
 	}
 
 	if f.Unique {
@@ -476,10 +539,6 @@ func (f *UUIDField) Definition() string {
 
 	if f.Default != "" {
 		def += fmt.Sprintf(" DEFAULT %s", f.Default.String())
-	}
-
-	if f.PrimaryKey {
-		def += fmt.Sprintf(" %s", ConstraintPrimaryKey.String())
 	}
 
 	if len(f.Constraints) > 0 {
@@ -501,6 +560,12 @@ func (f *UUIDField) CommentSQL(tableName string) string {
 }
 
 func (f *UUIDField) Validate() error {
+	if f.ColumnName == "" {
+		return errors.New("column name cannot be empty")
+	}
+	if f.PrimaryKey && f.Nullable {
+		return errors.New("primary key field cannot be nullable")
+	}
 	return nil
 }
 
@@ -509,4 +574,183 @@ func (f *UUIDField) GoType() string {
 		return "*uuid.UUID"
 	}
 	return "uuid.UUID"
+}
+
+// IndexSQL generates the SQL statement for creating an index if Index is true.
+func (f *UUIDField) IndexSQL(tableName string) string {
+	if !f.Index {
+		return ""
+	}
+	indexName := fmt.Sprintf("idx_%s_%s", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE INDEX "%s" ON "%s" ("%s");`, indexName, tableName, f.ColumnName)
+}
+
+// JSONField represents a JSON field in the database.
+type JSONField struct {
+	ColumnName  string
+	Nullable    bool
+	Unique      bool
+	Default     string
+	Index       bool
+	Comment     string
+	CustomType  string
+	Constraints []string
+	StructTag   string
+}
+
+// Definition generates the SQL definition for the JSONField.
+func (f *JSONField) Definition() string {
+	typ := "JSONB"
+	if f.CustomType != "" {
+		typ = f.CustomType
+	}
+	def := fmt.Sprintf(`"%s" %s`, f.ColumnName, typ)
+
+	if !f.Nullable {
+		def += " NOT NULL"
+	}
+
+	if f.Unique {
+		def += " UNIQUE"
+	}
+
+	if f.Default != "" {
+		def += fmt.Sprintf(" DEFAULT '%s'", f.Default)
+	}
+
+	if len(f.Constraints) > 0 {
+		def += " " + strings.Join(f.Constraints, " ")
+	}
+
+	return def
+}
+
+// Name returns the column name for the JSONField.
+func (f *JSONField) Name() string {
+	return f.ColumnName
+}
+
+// CommentSQL generates the SQL statement for adding a comment to the JSONField.
+func (f *JSONField) CommentSQL(tableName string) string {
+	if f.Comment == "" {
+		return ""
+	}
+	return fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s" IS '%s';`, tableName, f.ColumnName, f.Comment)
+}
+
+// Validate checks if the field's configuration is valid.
+func (f *JSONField) Validate() error {
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
+	}
+	return nil
+}
+
+// GoType returns the Go type for the JSONField.
+func (f *JSONField) GoType() string {
+	if f.Nullable {
+		return "*map[string]any"
+	}
+	return "map[string]any"
+}
+
+// IndexSQL generates the SQL statement for creating an index if Index or Unique is true.
+func (f *JSONField) IndexSQL(tableName string) string {
+	if !f.Index && !f.Unique {
+		return ""
+	}
+	indexType := "INDEX"
+	if f.Unique {
+		indexType = "UNIQUE INDEX"
+	}
+	indexName := fmt.Sprintf("%s_%s_idx", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE %s "%s" ON "%s" ("%s");`, indexType, indexName, tableName, f.ColumnName)
+}
+
+// PositiveIntegerField represents a positive integer field in the database.
+type PositiveIntegerField struct {
+	ColumnName  string
+	Nullable    bool
+	Unique      bool
+	Default     int
+	Index       bool
+	Comment     string
+	CustomType  string
+	Constraints []string
+	StructTag   string
+}
+
+// Definition generates the SQL definition for the PositiveIntegerField.
+func (f *PositiveIntegerField) Definition() string {
+	typ := "INTEGER"
+	if f.CustomType != "" {
+		typ = f.CustomType
+	}
+	def := fmt.Sprintf(`"%s" %s`, f.ColumnName, typ)
+
+	if !f.Nullable {
+		def += " NOT NULL"
+	}
+
+	if f.Unique {
+		def += " UNIQUE"
+	}
+
+	if f.Default != 0 {
+		def += fmt.Sprintf(" DEFAULT %d", f.Default)
+	}
+
+	// Adding check constraint for positive integers
+	def += " CHECK (" + f.ColumnName + " > 0)"
+
+	if len(f.Constraints) > 0 {
+		def += " " + strings.Join(f.Constraints, " ")
+	}
+
+	return def
+}
+
+// Name returns the column name for the PositiveIntegerField.
+func (f *PositiveIntegerField) Name() string {
+	return f.ColumnName
+}
+
+// CommentSQL generates the SQL statement for adding a comment to the PositiveIntegerField.
+func (f *PositiveIntegerField) CommentSQL(tableName string) string {
+	if f.Comment == "" {
+		return ""
+	}
+	return fmt.Sprintf(`COMMENT ON COLUMN "%s"."%s" IS '%s';`, tableName, f.ColumnName, f.Comment)
+}
+
+// Validate checks if the field's configuration is valid.
+func (f *PositiveIntegerField) Validate() error {
+	if f.ColumnName == "" {
+		return fmt.Errorf("column name cannot be empty")
+	}
+	if f.Default < 0 {
+		return fmt.Errorf("default value for positive integer field must be positive")
+	}
+	return nil
+}
+
+// GoType returns the Go type for the PositiveIntegerField.
+func (f *PositiveIntegerField) GoType() string {
+	if f.Nullable {
+		return "*int"
+	}
+	return "int"
+}
+
+// IndexSQL generates the SQL statement for creating an index if Index or Unique is true.
+func (f *PositiveIntegerField) IndexSQL(tableName string) string {
+	if !f.Index && !f.Unique {
+		return ""
+	}
+	indexType := "INDEX"
+	if f.Unique {
+		indexType = "UNIQUE INDEX"
+	}
+	indexName := fmt.Sprintf("%s_%s_idx", tableName, f.ColumnName)
+	return fmt.Sprintf(`CREATE %s "%s" ON "%s" ("%s");`, indexType, indexName, tableName, f.ColumnName)
 }

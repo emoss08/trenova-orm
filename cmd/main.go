@@ -94,6 +94,21 @@ func (User) Fields() []trenovaorm.Field {
 			Comment:    "Is the user active",
 			StructTag:  `json:"is_active" validate:"required"`,
 		},
+		&trenovaorm.JSONField{
+			ColumnName: "metadata",
+			Nullable:   true,
+			Comment:    "Metadata of the user",
+			StructTag:  `json:"metadata" validate:"omitempty"`,
+		},
+		&trenovaorm.PositiveIntegerField{
+			ColumnName: "age",
+			Nullable:   true,
+			Unique:     false,
+			Default:    0,
+			Index:      false,
+			Comment:    "Age of the user",
+			StructTag:  `json:"age" validate:"omitempty"`,
+		},
 	}
 }
 
@@ -101,14 +116,20 @@ func (User) Fields() []trenovaorm.Field {
 func (User) Indexes() []trenovaorm.Index {
 	return []trenovaorm.Index{
 		{
-			Name:    "idx_user_email",
 			Columns: []string{"email"},
 			Unique:  true,
 		},
 		{
-			Name:    "idx_user_is_active",
 			Columns: []string{"is_active"},
 			Unique:  false,
+		},
+		{
+			Name: "idx_unique_username_email",
+			Expressions: []trenovaorm.Expression{
+				trenovaorm.Lower{Column: "username"},
+			},
+			Columns: []string{"email"},
+			Unique:  true,
 		},
 	}
 }
@@ -133,9 +154,9 @@ func main() {
 		fmt.Println(sql)
 	}
 
-	// Generate Go struct definition
-	goStruct := generateGoStruct(user)
-	fmt.Println(goStruct)
+	// // Generate Go struct definition
+	// goStruct := generateGoStruct(user)
+	// fmt.Println(goStruct)
 }
 
 // Helper function to generate create table SQL
@@ -217,12 +238,4 @@ func toCamelCase(s string) string {
 		parts[i] = strings.Title(parts[i])
 	}
 	return strings.Join(parts, "")
-}
-
-// Capitalize the first letter of a string
-func capitalize(str string) string {
-	if len(str) == 0 {
-		return str
-	}
-	return strings.ToUpper(string(str[0])) + str[1:]
 }
