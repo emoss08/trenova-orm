@@ -12,13 +12,6 @@ type TimestampedModel struct {
 	trenovaorm.Model
 }
 
-// Mixins of the User.
-func (User) Mixins() []trenovaorm.Mixin {
-	return []trenovaorm.Mixin{
-		trenovaorm.TimestampedMixin{},
-	}
-}
-
 // Fields returns the common timestamp fields.
 func (t TimestampedModel) Fields() []trenovaorm.Field {
 	return []trenovaorm.Field{
@@ -42,6 +35,13 @@ func (t TimestampedModel) Fields() []trenovaorm.Field {
 // User holds the schema definition for the User entity.
 type User struct {
 	TimestampedModel
+}
+
+// Mixins of the User.
+func (User) Mixins() []trenovaorm.Mixin {
+	return []trenovaorm.Mixin{
+		trenovaorm.TimestampedMixin{},
+	}
 }
 
 func (User) TableName() string {
@@ -120,6 +120,20 @@ func (User) Fields() []trenovaorm.Field {
 			Comment:    "Rating of the user",
 			StructTag:  `json:"rating" validate:"omitempty"`,
 		},
+		&trenovaorm.ForeignKeyField{
+			ColumnName:     "role_id",
+			ReferenceTable: "roles",
+			ReferenceField: "id",
+			Nullable:       false,
+			Unique:         false,
+			Default:        "1",
+			Comment:        "Role of the user",
+			Annotations: trenovaorm.Annotation{
+				OnDelete: trenovaorm.OnDeleteCascade,
+				OnUpdate: trenovaorm.OnUpdateCascade,
+			},
+			StructTag: `json:"role_id" validate:"required"`,
+		},
 	}
 }
 
@@ -171,18 +185,30 @@ func main() {
 }
 
 // Helper function to generate create table SQL
+// Helper function to generate create table SQL
 func generateCreateTableSQL(model trenovaorm.Model) string {
 	var definitions []string
+	var foreignKeys []string
+
 	for _, field := range model.Fields() {
 		definitions = append(definitions, field.Definition())
+		if fkField, ok := field.(*trenovaorm.ForeignKeyField); ok {
+			foreignKeys = append(foreignKeys, fkField.ForeignKeyConstraint(model.TableName()))
+		}
 	}
 
 	// Include the mixin fields
 	for _, mixin := range model.Mixins() {
 		for _, field := range mixin.Fields() {
 			definitions = append(definitions, field.Definition())
+			if fkField, ok := field.(*trenovaorm.ForeignKeyField); ok {
+				foreignKeys = append(foreignKeys, fkField.ForeignKeyConstraint(model.TableName()))
+			}
 		}
 	}
+
+	// Add foreign key constraints to definitions
+	definitions = append(definitions, foreignKeys...)
 
 	tableName := model.TableName()
 	return fmt.Sprintf(`CREATE TABLE IF NOT EXISTS "%s" (%s);`, tableName, strings.Join(definitions, ", "))
